@@ -3,7 +3,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///signalflow.db")
+_is_vercel = os.environ.get("VERCEL", "") == "1"
+_default_db = "sqlite:////tmp/signalflow.db" if _is_vercel else "sqlite:///signalflow.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", _default_db)
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)

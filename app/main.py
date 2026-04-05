@@ -9,6 +9,15 @@ from app.schemas import SignalOut, StatsOut, StrategyOut
 
 Base.metadata.create_all(bind=engine)
 
+# Auto-seed on cold start if database is empty (Vercel ephemeral filesystem)
+_session = next(get_db())
+if _session.query(Signal).count() == 0:
+    _session.close()
+    from app.seed import seed
+    seed()
+else:
+    _session.close()
+
 app = FastAPI(title="SignalFlow API", version="0.1.0")
 
 app.add_middleware(
