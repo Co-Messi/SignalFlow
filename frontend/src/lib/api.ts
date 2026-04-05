@@ -1,17 +1,21 @@
 import type { Signal, Strategy, Stats } from "./types";
-import { mockSignals, mockStrategies, mockStats } from "./mock-data";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (() => {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is not set. The SignalFlow frontend requires a live backend API."
+    );
+  })();
 
-async function fetchAPI<T>(path: string, fallback: T): Promise<T> {
-  if (!API_BASE) return fallback;
-  try {
-    const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
-    if (!res.ok) return fallback;
-    return res.json();
-  } catch {
-    return fallback;
+async function fetchAPI<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(
+      `API request failed: ${res.status} ${res.statusText} for ${path}`
+    );
   }
+  return res.json();
 }
 
 export async function getSignals(params?: {
@@ -27,17 +31,17 @@ export async function getSignals(params?: {
     searchParams.set("min_confidence", String(params.min_confidence));
   if (params?.limit) searchParams.set("limit", String(params.limit));
   const qs = searchParams.toString();
-  return fetchAPI(`/api/signals${qs ? `?${qs}` : ""}`, mockSignals);
+  return fetchAPI(`/api/signals${qs ? `?${qs}` : ""}`);
 }
 
 export async function getLatestSignals(): Promise<Signal[]> {
-  return fetchAPI("/api/signals/latest", mockSignals.slice(0, 7));
+  return fetchAPI("/api/signals/latest");
 }
 
 export async function getStrategies(): Promise<Strategy[]> {
-  return fetchAPI("/api/strategies", mockStrategies);
+  return fetchAPI("/api/strategies");
 }
 
 export async function getStats(): Promise<Stats> {
-  return fetchAPI("/api/stats", mockStats);
+  return fetchAPI("/api/stats");
 }
