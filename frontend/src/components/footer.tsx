@@ -4,17 +4,15 @@ const links = {
   Product: [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Signals", href: "/dashboard" },
-    { label: "Strategies", href: "/dashboard" },
+    { label: "Pricing", href: "/#pricing" },
   ],
   Resources: [
-    { label: "Docs", href: "#" },
-    { label: "API", href: "#" },
-    { label: "GitHub", href: "#" },
+    { label: "API", href: "https://signalflow-api-deploy.vercel.app/docs", external: true },
+    { label: "GitHub", href: "https://github.com/Co-Messi/SignalFlow", external: true },
   ],
   Company: [
-    { label: "About", href: "#" },
-    { label: "Twitter", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Twitter", href: "https://twitter.com/saboriagroup", external: true },
+    { label: "Built by Siew Capital", href: "https://siews-capital-site.vercel.app", external: true },
   ],
 };
 
@@ -59,12 +57,23 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {items.map((item) => (
                   <li key={item.label}>
-                    <Link
-                      href={item.href}
-                      className="text-sm text-muted hover:text-foreground transition-colors"
-                    >
-                      {item.label}
-                    </Link>
+                    {"external" in item && item.external ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-muted hover:text-foreground transition-colors"
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className="text-sm text-muted hover:text-foreground transition-colors"
+                      >
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

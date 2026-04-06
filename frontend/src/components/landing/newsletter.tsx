@@ -7,10 +7,26 @@ export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      setSubmitted(true);
+    if (!email.trim()) return;
+    setError("");
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+    try {
+      const res = await fetch(`${apiBase}/api/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError("Something went wrong. Try again.");
+      }
+    } catch {
+      setError("Could not connect. Try again later.");
     }
   };
 
@@ -80,6 +96,9 @@ export default function Newsletter() {
             )}
           </div>
 
+          {error && (
+            <p className="mt-3 text-xs text-danger">{error}</p>
+          )}
           <p className="mt-4 text-xs text-muted-foreground">
             No spam. Unsubscribe anytime.
           </p>

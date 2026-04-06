@@ -42,6 +42,16 @@ class Signal(Base):
     stop_loss: Mapped[float] = mapped_column(Float)
 
 
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    subscribed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class Strategy(Base):
     __tablename__ = "strategies"
 

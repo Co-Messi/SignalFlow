@@ -1,10 +1,11 @@
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
-from app.models import Outcome, Signal, Strategy, StrategyStatus
+from app.models import Outcome, Signal, Strategy, StrategyStatus, Subscriber
 from app.schemas import SignalOut, StatsOut, StrategyOut
 
 Base.metadata.create_all(bind=engine)
@@ -120,3 +121,18 @@ def dashboard_stats(db: Session = Depends(get_db)):
         active_strategies=active,
         pending_signals=pending,
     )
+
+
+class SubscribeRequest(BaseModel):
+    email: str
+
+
+@app.post("/api/subscribe")
+def subscribe(req: SubscribeRequest, db: Session = Depends(get_db)):
+    existing = db.query(Subscriber).filter(Subscriber.email == req.email).first()
+    if existing:
+        return {"status": "already_subscribed"}
+    sub = Subscriber(email=req.email)
+    db.add(sub)
+    db.commit()
+    return {"status": "subscribed"}

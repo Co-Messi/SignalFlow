@@ -1,8 +1,66 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface LiveSignal {
+  asset: string;
+  direction: string;
+  entry_price: number;
+  target_price: number;
+  stop_loss: number;
+  confidence: number;
+  strategy_name: string;
+  created_at: string;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+
+const fallback: LiveSignal = {
+  asset: "BTC-USD",
+  direction: "long",
+  entry_price: 67240,
+  target_price: 71500,
+  stop_loss: 65800,
+  confidence: 0.87,
+  strategy_name: "whale_tracker",
+  created_at: new Date().toISOString(),
+};
+
+function fmt(n: number) {
+  return n >= 1000
+    ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+    : `$${n.toFixed(2)}`;
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default function Hero() {
+  const [signal, setSignal] = useState<LiveSignal>(fallback);
+
+  useEffect(() => {
+    if (!API_BASE) return;
+    fetch(`${API_BASE}/api/signals?limit=1`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data: LiveSignal[]) => {
+        if (data.length > 0) setSignal(data[0]);
+      })
+      .catch(() => {});
+  }, []);
+
+  const asset = signal.asset.replace("-", " / ").replace("_", " / ");
+  const ticker = signal.asset.charAt(0).toUpperCase();
+  const isLong = signal.direction === "long";
+  const confPct = Math.round(signal.confidence * 100);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
       {/* Background gradient glow */}
@@ -78,7 +136,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right: Signal preview card */}
+        {/* Right: Live signal preview card */}
         <div
           className="animate-slide-up flex-1 max-w-md w-full"
           style={{ animationDelay: "0.3s" }}
@@ -92,17 +150,31 @@ export default function Hero() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-lg font-semibold text-accent">
-                    B
+                    {ticker}
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-foreground">
-                      BTC / USDT
+                      {asset}
                     </div>
-                    <div className="text-xs text-muted">Long Signal</div>
+                    <div className="text-xs text-muted">
+                      {isLong ? "Long" : "Short"} Signal
+                    </div>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">
-                  STRONG BUY
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+                    isLong
+                      ? "bg-success/10 text-success border-success/20"
+                      : "bg-danger/10 text-danger border-danger/20"
+                  }`}
+                >
+                  {isLong
+                    ? confPct >= 80
+                      ? "STRONG BUY"
+                      : "BUY"
+                    : confPct >= 80
+                      ? "STRONG SELL"
+                      : "SELL"}
                 </span>
               </div>
 
@@ -125,19 +197,19 @@ export default function Hero() {
                 <div className="rounded-lg bg-background/50 p-3">
                   <div className="text-xs text-muted mb-1">Entry</div>
                   <div className="text-sm font-mono font-medium text-foreground">
-                    $67,240
+                    {fmt(signal.entry_price)}
                   </div>
                 </div>
                 <div className="rounded-lg bg-background/50 p-3">
                   <div className="text-xs text-muted mb-1">Target</div>
                   <div className="text-sm font-mono font-medium text-success">
-                    $71,500
+                    {fmt(signal.target_price)}
                   </div>
                 </div>
                 <div className="rounded-lg bg-background/50 p-3">
                   <div className="text-xs text-muted mb-1">Stop Loss</div>
                   <div className="text-sm font-mono font-medium text-danger">
-                    $65,800
+                    {fmt(signal.stop_loss)}
                   </div>
                 </div>
               </div>
@@ -147,21 +219,21 @@ export default function Hero() {
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="text-muted">Confidence</span>
                   <span className="font-medium text-accent-foreground">
-                    87%
+                    {confPct}%
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-border overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-accent to-accent-foreground"
-                    style={{ width: "87%" }}
+                    style={{ width: `${confPct}%` }}
                   />
                 </div>
               </div>
 
               {/* Timestamp */}
               <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                <span>Whale Tracker + Sentiment</span>
-                <span>2m ago</span>
+                <span>{signal.strategy_name.replace(/_/g, " ")}</span>
+                <span>{timeAgo(signal.created_at)}</span>
               </div>
             </div>
           </div>
